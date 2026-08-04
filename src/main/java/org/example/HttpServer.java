@@ -75,32 +75,28 @@ public class HttpServer {
         );
 
         try (clientSocket) {
-            HttpRequest request = requestParser.parse(
-                    clientSocket.getInputStream()
-            );
+            try {
+                HttpRequest request = requestParser.parse(
+                        clientSocket.getInputStream()
+                );
 
-            System.out.println(
-                    "Method: " + request.getMethod()
-            );
-            System.out.println(
-                    "Path: " + request.getPath()
-            );
-            System.out.println(
-                    "Query: " + request.getQueryParameters()
-            );
-            System.out.println(
-                    "Version: " + request.getHttpVersion()
-            );
+                logRequest(request);
 
-            sendHelloResponse(clientSocket);
+                sendHelloResponse(clientSocket);
 
-        } catch (BadRequestException exception) {
-            System.err.println(
-                    "Bad request from " +
-                            clientAddress +
-                            ": " +
-                            exception.getMessage()
-            );
+            } catch (BadRequestException exception) {
+                System.err.println(
+                        "Bad request from " +
+                                clientAddress +
+                                ": " +
+                                exception.getMessage()
+                );
+
+                sendBadRequestResponse(
+                        clientSocket,
+                        exception.getMessage()
+                );
+            }
 
         } catch (IOException exception) {
             System.err.println(
@@ -113,6 +109,34 @@ public class HttpServer {
         } finally {
             System.out.println(
                     "Connection closed: " + clientAddress
+            );
+        }
+    }
+
+    private void logRequest(HttpRequest request) {
+        System.out.println(
+                "Method: " + request.getMethod()
+        );
+
+        System.out.println(
+                "Path: " + request.getPath()
+        );
+
+        System.out.println(
+                "Query: " + request.getQueryParameters()
+        );
+
+        System.out.println(
+                "Version: " + request.getHttpVersion()
+        );
+
+        System.out.println(
+                "Headers: " + request.getHeaders()
+        );
+
+        if (request.getBody().length > 0) {
+            System.out.println(
+                    "Body: " + request.getBodyAsString()
             );
         }
     }
@@ -132,6 +156,7 @@ public class HttpServer {
 
         try {
             serverSocket.close();
+
         } catch (IOException exception) {
             System.err.println(
                     "Failed to close server socket: " +
@@ -143,16 +168,39 @@ public class HttpServer {
     private void sendHelloResponse(
             Socket socket
     ) throws IOException {
-        String body = "Hello World";
+        sendResponse(
+                socket,
+                "HTTP/1.1 200 OK",
+                "Hello World"
+        );
+    }
 
+    private void sendBadRequestResponse(
+            Socket socket,
+            String message
+    ) throws IOException {
+        sendResponse(
+                socket,
+                "HTTP/1.1 400 Bad Request",
+                "Bad Request: " + message
+        );
+    }
+
+    private void sendResponse(
+            Socket socket,
+            String statusLine,
+            String body
+    ) throws IOException {
         byte[] bodyBytes = body.getBytes(
                 StandardCharsets.UTF_8
         );
 
         String responseHeaders =
-                "HTTP/1.1 200 OK\r\n" +
+                statusLine + "\r\n" +
                         "Content-Type: text/plain; charset=UTF-8\r\n" +
-                        "Content-Length: " + bodyBytes.length + "\r\n" +
+                        "Content-Length: " +
+                        bodyBytes.length +
+                        "\r\n" +
                         "Connection: close\r\n" +
                         "\r\n";
 

@@ -32,6 +32,7 @@ public class RequestParser {
 
             String path = targetParts[0];
 
+
             if (!path.startsWith("/")) {
                 throw new BadRequestException(
                         "request path must start with /"
@@ -39,6 +40,9 @@ public class RequestParser {
             }
 
             Map<String, String> queryParameters = new HashMap<>();
+            Map<String, String> headers = parseHeaders(reader);
+
+            byte[] body = readBody(reader, headers);
 
             if (targetParts.length == 2) {
                 String queryString = targetParts[1];
@@ -71,10 +75,7 @@ public class RequestParser {
 
             validateHttpVersion(version);
 
-            if (!target.startsWith("/")){
-                throw new BadRequestException("request path must start with /");
-            }
-            return new HttpRequest(method, path, version, Map.of(), queryParameters, Map.of(), new byte[0]);
+            return new HttpRequest(method, path, version, headers, queryParameters, Map.of(), body);
 
         } catch (IOException exception){
             throw new BadRequestException("failed to read HTTP request");
@@ -105,5 +106,75 @@ public class RequestParser {
         if (!version.equals("HTTP/1.1")){
             throw new BadRequestException("unsupported version: "+ version);
         }
+    }
+
+    private Map<String, String> parseHeaders(BufferedReader reader) throws IOException{
+        Map<String, String> headers = new HashMap<>();
+
+        String line;
+
+        while ((line = reader.readLine()) != null && !line.isEmpty()){
+            int colonIndex = line.indexOf(':');
+
+            if (colonIndex <= 0){
+                throw new BadRequestException("Invalid header: "+ line);
+            }
+
+            String name  = line.substring(0, colonIndex).trim().toLowerCase();
+
+            String value = line.substring(colonIndex + 1).trim();
+
+            headers.put(name, value);
+        }
+        return headers;
+    }
+    private byte[] readBody(
+            BufferedReader reader,
+            Map<String, String> headers
+    ) throws IOException {
+        String contentLengthHeader = headers.get("content-length");
+
+        if (contentLengthHeader == null) {
+            return new byte[0];
+        }
+
+        int contentLength;
+
+        try {
+            contentLength = Integer.parseInt(contentLengthHeader);
+        } catch (NumberFormatException exception) {
+            throw new BadRequestException(
+                    "Invalid Content-Length: " + contentLengthHeader
+            );
+        }
+
+        if (contentLength < 0) {
+            throw new BadRequestException(
+                    "Content-Length cannot be negative"
+            );
+        }
+
+        char[] bodyChars = new char[contentLength];
+
+        int totalRead = 0;
+
+        while (totalRead < contentLength) {
+            int read = reader.read(
+                    bodyChars,
+                    totalRead,
+                    contentLength - totalRead
+            );
+
+            if (read == -1) {
+                throw new BadRequestException(
+                        "Body shorter than Content-Length"
+                );
+            }
+
+            totalRead += read;
+        }
+
+        return new String(bodyChars)
+                .getBytes(StandardCharsets.UTF_8);
     }
 }

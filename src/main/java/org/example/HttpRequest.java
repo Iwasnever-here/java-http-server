@@ -1,5 +1,6 @@
 package org.example;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class HttpRequest {
@@ -60,5 +61,13 @@ public class HttpRequest {
 
     public byte[] getBody() {
         return body;
+    }
+
+    public String getHeader(String name){
+        return headers.get(name.toLowerCase());
+    }
+
+    public String getBodyAsString(){
+        return new String(body, StandardCharsets.UTF_8);
     }
 }

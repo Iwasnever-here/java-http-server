@@ -216,6 +216,137 @@ class RequestParserTest {
         assertEquals("/users", request.getPath());
         assertEquals(0, request.getQueryParameters().size());
     }
+    @Test
+    void parsesMultipleHeaders() {
+        InputStream inputStream = createInputStream(
+                "GET /users HTTP/1.1\r\n" +
+                        "Host: localhost:8080\r\n" +
+                        "Content-Type: application/json\r\n" +
+                        "\r\n"
+        );
+
+        HttpRequest request = parser.parse(inputStream);
+
+        assertEquals(
+                "localhost:8080",
+                request.getHeader("host")
+        );
+
+        assertEquals(
+                "application/json",
+                request.getHeader("content-type")
+        );
+    }
+    @Test
+    void headersAreCaseInsensitive() {
+        InputStream inputStream = createInputStream(
+                "GET /users HTTP/1.1\r\n" +
+                        "Content-Type: application/json\r\n" +
+                        "\r\n"
+        );
+
+        HttpRequest request = parser.parse(inputStream);
+
+        assertEquals(
+                "application/json",
+                request.getHeader("Content-Type")
+        );
+
+        assertEquals(
+                "application/json",
+                request.getHeader("CONTENT-TYPE")
+        );
+    }
+    @Test
+    void rejectsInvalidHeader() {
+        InputStream inputStream = createInputStream(
+                "GET /users HTTP/1.1\r\n" +
+                        "InvalidHeader\r\n" +
+                        "\r\n"
+        );
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> parser.parse(inputStream)
+        );
+
+        assertEquals(
+                "Invalid header: InvalidHeader",
+                exception.getMessage()
+        );
+    }
+    @Test
+    void parsesPostBody() {
+        String body = "{\"name\":\"Alice\"}";
+
+        InputStream inputStream = createInputStream(
+                "POST /users HTTP/1.1\r\n" +
+                        "Content-Type: application/json\r\n" +
+                        "Content-Length: " +
+                        body.getBytes(StandardCharsets.UTF_8).length +
+                        "\r\n" +
+                        "\r\n" +
+                        body
+        );
+
+        HttpRequest request = parser.parse(inputStream);
+
+        assertEquals(HttpMethod.POST, request.getMethod());
+        assertEquals("/users", request.getPath());
+        assertEquals(
+                "application/json",
+                request.getHeader("content-type")
+        );
+        assertEquals(body, request.getBodyAsString());
+    }
+    @Test
+    void returnsEmptyBodyWhenContentLengthIsMissing() {
+        InputStream inputStream = createInputStream(
+                "POST /users HTTP/1.1\r\n\r\n"
+        );
+
+        HttpRequest request = parser.parse(inputStream);
+
+        assertEquals("", request.getBodyAsString());
+    }
+    @Test
+    void rejectsInvalidContentLength() {
+        InputStream inputStream = createInputStream(
+                "POST /users HTTP/1.1\r\n" +
+                        "Content-Length: abc\r\n" +
+                        "\r\n"
+        );
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> parser.parse(inputStream)
+        );
+
+        assertEquals(
+                "Invalid Content-Length: abc",
+                exception.getMessage()
+        );
+    }
+    @Test
+    void rejectsBodyShorterThanContentLength() {
+        InputStream inputStream = createInputStream(
+                "POST /users HTTP/1.1\r\n" +
+                        "Content-Length: 10\r\n" +
+                        "\r\n" +
+                        "hello"
+        );
+
+        BadRequestException exception = assertThrows(
+                BadRequestException.class,
+                () -> parser.parse(inputStream)
+        );
+
+        assertEquals(
+                "Body shorter than Content-Length",
+                exception.getMessage()
+        );
+    }
+
 
     private InputStream createInputStream(String rawRequest) {
         return new ByteArrayInputStream(
