@@ -11,6 +11,7 @@ public class HttpServer {
     private final int port;
     private final RequestParser requestParser;
     private final ResponseWriter responseWriter;
+    private final Router router;
 
     private boolean running;
     private ServerSocket serverSocket;
@@ -19,10 +20,18 @@ public class HttpServer {
         this.port = config.getPort();
         this.requestParser = new RequestParser();
         this.responseWriter = new ResponseWriter();
+        this.router = new Router();
     }
 
     public boolean isRunning() {
         return running;
+    }
+
+    public void get(String path, RouteHandler handler){
+        router.add(HttpMethod.GET, path, handler);
+    }
+    public void post(String path, RouteHandler handler){
+        router.add(HttpMethod.POST, path, handler);
     }
 
     public void start() {
@@ -83,7 +92,7 @@ public class HttpServer {
 
                 logRequest(request);
 
-                HttpResponse response = new HttpResponse().text("Hello World");
+                HttpResponse response = createResponseFor(request);
                 responseWriter.write(response, clientSocket.getOutputStream());
 
             } catch (BadRequestException exception) {
@@ -119,6 +128,48 @@ public class HttpServer {
             System.out.println(
                     "Connection closed: " + clientAddress
             );
+        }
+    }
+
+    private HttpResponse createResponseFor(
+            HttpRequest request
+    ) {
+        RouteHandler handler = router.find(
+                request.getMethod(),
+                request.getPath()
+        );
+
+        if (handler == null) {
+            if (router.hasPath(request.getPath())) {
+                return new HttpResponse()
+                        .status(
+                                HttpStatus.METHOD_NOT_ALLOWED
+                        )
+                        .text("Method Not Allowed");
+            }
+
+            return new HttpResponse()
+                    .status(HttpStatus.NOT_FOUND)
+                    .text("Not Found");
+        }
+
+        HttpResponse response = new HttpResponse();
+
+        try {
+            handler.handle(request, response);
+            return response;
+
+        } catch (Exception exception) {
+            System.err.println(
+                    "Route handler failed: " +
+                            exception.getMessage()
+            );
+
+            return new HttpResponse()
+                    .status(
+                            HttpStatus.INTERNAL_SERVER_ERROR
+                    )
+                    .text("Internal Server Error");
         }
     }
 
