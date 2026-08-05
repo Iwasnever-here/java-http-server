@@ -1,16 +1,16 @@
 package org.example;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.nio.charset.StandardCharsets;
+
 
 public class HttpServer {
 
     private final int port;
     private final RequestParser requestParser;
+    private final ResponseWriter responseWriter;
 
     private boolean running;
     private ServerSocket serverSocket;
@@ -18,6 +18,7 @@ public class HttpServer {
     public HttpServer(ServerConfig config) {
         this.port = config.getPort();
         this.requestParser = new RequestParser();
+        this.responseWriter = new ResponseWriter();
     }
 
     public boolean isRunning() {
@@ -82,7 +83,8 @@ public class HttpServer {
 
                 logRequest(request);
 
-                sendHelloResponse(clientSocket);
+                HttpResponse response = new HttpResponse().text("Hello World");
+                responseWriter.write(response, clientSocket.getOutputStream());
 
             } catch (BadRequestException exception) {
                 System.err.println(
@@ -92,9 +94,16 @@ public class HttpServer {
                                 exception.getMessage()
                 );
 
-                sendBadRequestResponse(
-                        clientSocket,
-                        exception.getMessage()
+                HttpResponse response = new HttpResponse()
+                        .status(HttpStatus.BAD_REQUEST)
+                        .text(
+                                "Bad Request: " +
+                                        exception.getMessage()
+                        );
+
+                responseWriter.write(
+                        response,
+                        clientSocket.getOutputStream()
                 );
             }
 
@@ -165,54 +174,5 @@ public class HttpServer {
         }
     }
 
-    private void sendHelloResponse(
-            Socket socket
-    ) throws IOException {
-        sendResponse(
-                socket,
-                "HTTP/1.1 200 OK",
-                "Hello World"
-        );
-    }
 
-    private void sendBadRequestResponse(
-            Socket socket,
-            String message
-    ) throws IOException {
-        sendResponse(
-                socket,
-                "HTTP/1.1 400 Bad Request",
-                "Bad Request: " + message
-        );
-    }
-
-    private void sendResponse(
-            Socket socket,
-            String statusLine,
-            String body
-    ) throws IOException {
-        byte[] bodyBytes = body.getBytes(
-                StandardCharsets.UTF_8
-        );
-
-        String responseHeaders =
-                statusLine + "\r\n" +
-                        "Content-Type: text/plain; charset=UTF-8\r\n" +
-                        "Content-Length: " +
-                        bodyBytes.length +
-                        "\r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n";
-
-        OutputStream output = socket.getOutputStream();
-
-        output.write(
-                responseHeaders.getBytes(
-                        StandardCharsets.UTF_8
-                )
-        );
-
-        output.write(bodyBytes);
-        output.flush();
-    }
 }
