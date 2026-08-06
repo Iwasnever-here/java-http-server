@@ -14,17 +14,17 @@ public class Main {
         HttpServer server = new HttpServer(config);
 
         server.get(
-                "/",
+                "/users/new",
                 (request, response) ->
-                        response.text("Home page")
+                        response.text("Create new user")
         );
 
         server.get(
-                "/users",
-                (request, response) ->
-                        response.json(
-                                "[{\"id\":1,\"name\":\"Alice\"}]"
-                        )
+                "/users/:id",
+                (request, response) -> {
+                    String id = request.getPathParameter("id");
+                    response.text("User " + id);
+                }
         );
 
         server.post(

@@ -134,12 +134,12 @@ public class HttpServer {
     private HttpResponse createResponseFor(
             HttpRequest request
     ) {
-        RouteHandler handler = router.find(
+        RouteMatch routeMatch = router.match(
                 request.getMethod(),
                 request.getPath()
         );
 
-        if (handler == null) {
+        if (routeMatch == null) {
             if (router.hasPath(request.getPath())) {
                 return new HttpResponse()
                         .status(
@@ -154,8 +154,12 @@ public class HttpServer {
         }
 
         HttpResponse response = new HttpResponse();
+        request.setPathParameters(
+                routeMatch.getPathParameters()
+        );
 
         try {
+            RouteHandler handler = routeMatch.getRoute().getHandler();
             handler.handle(request, response);
             return response;
 

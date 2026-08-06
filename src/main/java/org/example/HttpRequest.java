@@ -10,7 +10,7 @@ public class HttpRequest {
     private final String httpVersion;
     private final Map<String, String> headers;
     private final Map<String, String> queryParameters;
-    private final Map<String, String> pathParameters;
+    private Map<String, String> pathParameters;
     private final byte[] body;
 
     public HttpRequest(
@@ -69,5 +69,15 @@ public class HttpRequest {
 
     public String getBodyAsString(){
         return new String(body, StandardCharsets.UTF_8);
+    }
+
+    public String getPathParameter(String name) {
+        return pathParameters.get(name);
+    }
+
+    public void setPathParameters(
+            Map<String, String> pathParameters
+    ) {
+        this.pathParameters = pathParameters;
     }
 }
