@@ -13,6 +13,8 @@ public class HttpServer {
     private final ResponseWriter responseWriter;
     private final Router router;
 
+    private final StaticFileHandler staticFileHandler;
+
     private boolean running;
     private ServerSocket serverSocket;
 
@@ -21,6 +23,7 @@ public class HttpServer {
         this.requestParser = new RequestParser();
         this.responseWriter = new ResponseWriter();
         this.router = new Router();
+        this.staticFileHandler = new StaticFileHandler(config.getStaticDirectory());
     }
 
     public boolean isRunning() {
@@ -139,28 +142,66 @@ public class HttpServer {
                 request.getPath()
         );
 
-        if (routeMatch == null) {
-            if (router.hasPath(request.getPath())) {
-                return new HttpResponse()
-                        .status(
-                                HttpStatus.METHOD_NOT_ALLOWED
-                        )
-                        .text("Method Not Allowed");
-            }
-
-            return new HttpResponse()
-                    .status(HttpStatus.NOT_FOUND)
-                    .text("Not Found");
+        if (routeMatch != null) {
+            return executeRoute(request, routeMatch);
         }
 
-        HttpResponse response = new HttpResponse();
+        if (
+                request.getMethod() == HttpMethod.GET &&
+                        !router.hasPath(request.getPath())
+        ) {
+            HttpResponse response = new HttpResponse();
+
+            try {
+                staticFileHandler.handle(
+                        request,
+                        response
+                );
+                return response;
+
+            } catch (IOException exception) {
+                System.err.println(
+                        "Static file error: " +
+                                exception.getMessage()
+                );
+
+                return new HttpResponse()
+                        .status(
+                                HttpStatus.INTERNAL_SERVER_ERROR
+                        )
+                        .text("Internal Server Error");
+            }
+        }
+
+        if (router.hasPath(request.getPath())) {
+            return new HttpResponse()
+                    .status(
+                            HttpStatus.METHOD_NOT_ALLOWED
+                    )
+                    .text("Method Not Allowed");
+        }
+
+        return new HttpResponse()
+                .status(HttpStatus.NOT_FOUND)
+                .text("Not Found");
+    }
+
+    private HttpResponse executeRoute(
+            HttpRequest request,
+            RouteMatch routeMatch
+    ) {
         request.setPathParameters(
                 routeMatch.getPathParameters()
         );
 
+        HttpResponse response = new HttpResponse();
+
         try {
-            RouteHandler handler = routeMatch.getRoute().getHandler();
-            handler.handle(request, response);
+            routeMatch
+                    .getRoute()
+                    .getHandler()
+                    .handle(request, response);
+
             return response;
 
         } catch (Exception exception) {

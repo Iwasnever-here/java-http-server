@@ -40,6 +40,11 @@ public class HttpResponse {
         return this;
     }
 
+    public HttpResponse body(byte[] value) {
+        this.body = value;
+        return this;
+    }
+
     public HttpResponse body(String value){
         this.body = value.getBytes(StandardCharsets.UTF_8);
         return this;

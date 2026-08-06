@@ -33,4 +33,5 @@ public class ServerConfig {
     public Path getStaticDirectory(){
         return staticDirectory;
     }
+
 }

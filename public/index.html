@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0"
+  >
+
+  <meta
+          name="description"
+          content="A dinosaur game served by a custom Java HTTP server."
+  >
+
+  <title>Java HTTP Server</title>
+
+  <link
+          rel="stylesheet"
+          href="/styles.css"
+  >
+</head>
+
+<body>
+<main class="page">
+  <header class="page-header">
+    <h1>JAVA HTTP SERVER</h1>
+
+    <div class="header-line"></div>
+
+    <p>
+      A simple HTTP server in Java serving this dinosaur game.
+    </p>
+  </header>
+
+  <section class="game-section">
+    <div
+            id="game-container"
+            class="game-container"
+            tabindex="0"
+            role="application"
+            aria-label="Dinosaur runner game"
+    >
+      <canvas
+              id="game-canvas"
+              width="1200"
+              height="400"
+      >
+        Your browser does not support HTML canvas.
+      </canvas>
+
+      <div class="score-display">
+        <span>HI</span>
+
+        <span id="high-score">
+            00000
+          </span>
+
+        <span id="score">
+            00000
+          </span>
+      </div>
+
+      <div
+              id="start-overlay"
+              class="game-overlay"
+      >
+        <p>
+          Press SPACE or UP arrow to jump.
+        </p>
+
+        <button
+                id="start-button"
+                class="game-button"
+                type="button"
+        >
+          ▶ START GAME
+        </button>
+      </div>
+
+      <div
+              id="game-over-overlay"
+              class="game-overlay hidden"
+      >
+        <h2>GAME OVER</h2>
+
+        <p id="final-score">
+          Score: 00000
+        </p>
+
+        <button
+                id="restart-button"
+                class="game-button"
+                type="button"
+        >
+          ↻ PLAY AGAIN
+        </button>
+      </div>
+    </div>
+
+    <p class="instructions">
+      Press SPACE or UP arrow to jump.
+    </p>
+
+    <button
+            id="mobile-jump-button"
+            class="jump-button"
+            type="button"
+    >
+      JUMP
+    </button>
+  </section>
+
+  <footer>
+    Served by Java HTTP Server
+  </footer>
+</main>
+
+<script src="/game.js"></script>
+</body>
+</html>
