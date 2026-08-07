@@ -27,6 +27,19 @@ public class Main {
                 }
         );
 
+        server.get(
+                "/slow",
+                (request, response) -> {
+                    Thread.sleep(2000);
+                    response.text("Finished");
+                }
+        );
+        server.get(
+                "/quick",
+                (request, response) ->
+                        response.text("Quick")
+        );
+
         server.post(
                 "/users",
                 (request, response) ->

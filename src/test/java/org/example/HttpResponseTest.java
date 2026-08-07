@@ -89,4 +89,5 @@ class HttpResponseTest {
                 response.getHeaders().get("Connection")
         );
     }
+
 }

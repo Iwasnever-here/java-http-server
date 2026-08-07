@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 
 public class HttpServer {
@@ -15,11 +17,16 @@ public class HttpServer {
 
     private final StaticFileHandler staticFileHandler;
 
+    private final int threadPoolSize;
+    private ExecutorService executor;
+
+
     private boolean running;
     private ServerSocket serverSocket;
 
     public HttpServer(ServerConfig config) {
         this.port = config.getPort();
+        this.threadPoolSize = config.getThreadPoolSize();
         this.requestParser = new RequestParser();
         this.responseWriter = new ResponseWriter();
         this.router = new Router();
@@ -46,6 +53,7 @@ public class HttpServer {
 
         try {
             serverSocket = new ServerSocket(port);
+            executor = Executors.newFixedThreadPool(threadPoolSize);
             running = true;
 
             System.out.println(
@@ -54,7 +62,8 @@ public class HttpServer {
 
             while (running) {
                 Socket clientSocket = serverSocket.accept();
-                handleConnection(clientSocket);
+
+                executor.submit(() -> handleConnection(clientSocket));
             }
 
         } catch (SocketException exception) {
@@ -249,6 +258,18 @@ public class HttpServer {
     public void stop() {
         running = false;
         closeServerSocket();
+
+        if (executor != null){
+            executor.shutdown();
+        }
+    }
+
+    public int getPort() {
+        if (serverSocket != null && serverSocket.isBound()) {
+            return serverSocket.getLocalPort();
+        }
+
+        return port;
     }
 
     private void closeServerSocket() {
