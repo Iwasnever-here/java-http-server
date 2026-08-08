@@ -26,7 +26,7 @@ public class Session {
 
     public String getString(String key){
         Object value = values.get(key);
-        return value == null ? null : values.toString();
+        return value == null ? null : value.toString();
     }
 
     public void remove(String key){
