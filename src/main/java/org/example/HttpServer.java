@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -14,6 +16,8 @@ public class HttpServer {
 
     private final int port;
     private final int threadPoolSize;
+
+    private final List<Middleware> middleware;
 
     private final RequestParser requestParser;
     private final ResponseWriter responseWriter;
@@ -32,6 +36,8 @@ public class HttpServer {
         this.port = config.getPort();
         this.threadPoolSize = config.getThreadPoolSize();
 
+        this.middleware = new ArrayList<>();
+
         this.requestParser = new RequestParser();
         this.responseWriter = new ResponseWriter();
         this.router = new Router();
@@ -40,6 +46,11 @@ public class HttpServer {
                 new StaticFileHandler(
                         config.getStaticDirectory()
                 );
+    }
+
+    public void use(Middleware middleware) {
+        ensureNotRunning();
+        this.middleware.add(middleware);
     }
 
     public boolean isRunning() {
@@ -328,13 +339,11 @@ public class HttpServer {
                 new HttpResponse();
 
         try {
-            routeMatch
-                    .getRoute()
-                    .getHandler()
-                    .handle(
-                            request,
-                            response
-                    );
+            RouteHandler handler = routeMatch
+                    .getRoute().getHandler();
+            MiddlewareChain chain = new MiddlewareChain(middleware, handler);
+
+            chain.next(request, response);
 
             return response;
 

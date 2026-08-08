@@ -50,6 +50,19 @@ public class Main {
                                 )
         );
 
+        server.use(
+                new TimingMiddleware()
+        );
+
+        server.get(
+                "/boom",
+                (request, response) -> {
+                    throw new RuntimeException(
+                            "Something broke"
+                    );
+                }
+        );
+
         server.start();
     }
 }
