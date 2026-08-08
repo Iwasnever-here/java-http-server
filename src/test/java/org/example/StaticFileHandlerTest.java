@@ -145,6 +145,7 @@ class StaticFileHandlerTest {
                 Map.of(),
                 Map.of(),
                 Map.of(),
+                Map.of(),
                 new byte[0]
         );
     }

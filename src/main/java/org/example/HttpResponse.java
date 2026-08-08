@@ -45,6 +45,10 @@ public class HttpResponse {
         return this;
     }
 
+    public HttpResponse cookie(String name, String value){
+        return cookie(name, value, "/", null, true);
+    }
+
     public HttpResponse body(String value){
         this.body = value.getBytes(StandardCharsets.UTF_8);
         return this;
@@ -64,5 +68,25 @@ public class HttpResponse {
                 "application/json; charset=UTF-8"
         );
         return body(value);
+    }
+
+    public HttpResponse cookie(String name, String value, String path, Long maxAge, boolean httpOnly){
+        StringBuilder cookie = new StringBuilder();
+
+        cookie.append(name).append("=").append(value);
+
+        if (path != null){
+            cookie.append("; Path=").append(path);
+        }
+
+        if (maxAge != null){
+            cookie.append("; Max-Age=").append(maxAge);
+        }
+        if (httpOnly){
+            cookie.append("; HttpOnly");
+        }
+        header("Set-Cookie", cookie.toString());
+
+        return this;
     }
 }

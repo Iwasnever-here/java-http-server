@@ -12,6 +12,8 @@ public class HttpRequest {
     private final Map<String, String> queryParameters;
     private Map<String, String> pathParameters;
     private final byte[] body;
+    private final Map<String, String> cookies;
+    private Session session;
 
     public HttpRequest(
             HttpMethod method,
@@ -20,6 +22,7 @@ public class HttpRequest {
             Map<String, String> headers,
             Map<String, String> queryParameters,
             Map<String, String> pathParameters,
+            Map<String, String> cookies,
             byte[] body
     ) {
         this.method = method;
@@ -29,11 +32,20 @@ public class HttpRequest {
         this.queryParameters = queryParameters;
         this.pathParameters = pathParameters;
         this.body = body;
+        this.cookies = cookies;
     }
+    public String getCookie(String name) { return cookies.get(name);}
+
+    public Session getSession() { return session;}
+
+    public void setSession(Session session) { this.session = session;}
+
+    public Map<String, String> getCookies() { return cookies;}
 
     public HttpMethod getMethod() {
         return method;
     }
+
 
     public String getPath() {
         return path;

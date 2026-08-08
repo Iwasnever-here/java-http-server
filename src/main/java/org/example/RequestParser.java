@@ -41,7 +41,7 @@ public class RequestParser {
 
             Map<String, String> queryParameters = new HashMap<>();
             Map<String, String> headers = parseHeaders(reader);
-
+            Map<String, String> cookies = parseCookies(headers);
             byte[] body = readBody(reader, headers);
 
             if (targetParts.length == 2) {
@@ -75,7 +75,16 @@ public class RequestParser {
 
             validateHttpVersion(version);
 
-            return new HttpRequest(method, path, version, headers, queryParameters, Map.of(), body);
+            return new HttpRequest(
+                    method,
+                    path,
+                    version,
+                    headers,
+                    queryParameters,
+                    Map.of(),
+                    cookies,
+                    body
+            );
 
         } catch (IOException exception){
             throw new BadRequestException("failed to read HTTP request");
@@ -176,5 +185,40 @@ public class RequestParser {
 
         return new String(bodyChars)
                 .getBytes(StandardCharsets.UTF_8);
+    }
+
+    private Map<String, String> parseCookies(
+            Map<String, String> headers
+    ) {
+        Map<String, String> cookies = new HashMap<>();
+
+        String cookieHeader =
+                headers.get("cookie");
+
+        if (
+                cookieHeader == null ||
+                        cookieHeader.isBlank()
+        ) {
+            return cookies;
+        }
+
+        String[] cookiePairs =
+                cookieHeader.split(";");
+
+        for (String cookiePair : cookiePairs) {
+            String[] parts =
+                    cookiePair.trim().split("=", 2);
+
+            if (parts.length != 2) {
+                continue;
+            }
+
+            String name = parts[0].trim();
+            String value = parts[1].trim();
+
+            cookies.put(name, value);
+        }
+
+        return cookies;
     }
 }

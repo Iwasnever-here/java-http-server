@@ -12,6 +12,15 @@ public class Main {
         );
 
         HttpServer server = new HttpServer(config);
+        SessionManager sessionManager = new SessionManager();
+
+        server.use(new ErrorHandlingMiddleware());
+
+        server.use(new SessionMiddleware(sessionManager));
+
+        server.use(new LoggingMiddleware());
+
+        server.use(new TimingMiddleware());
 
         server.get(
                 "/users/new",
@@ -50,15 +59,82 @@ public class Main {
                                 )
         );
 
-        server.use(
-                new TimingMiddleware()
-        );
 
         server.get(
                 "/boom",
                 (request, response) -> {
                     throw new RuntimeException(
                             "Something broke"
+                    );
+                }
+        );
+
+        server.post(
+                "/login",
+                (request, response) -> {
+                    Session session =
+                            request.getSession();
+
+                    session.set(
+                            "username",
+                            "Alice"
+                    );
+
+                    response.text(
+                            "Logged in"
+                    );
+                }
+        );
+        server.get(
+                "/profile",
+                (request, response) -> {
+                    Session session =
+                            request.getSession();
+
+                    String username =
+                            session.getString(
+                                    "username"
+                            );
+
+                    if (username == null) {
+                        response
+                                .status(
+                                        HttpStatus.UNAUTHORIZED
+                                )
+                                .text(
+                                        "Not logged in"
+                                );
+
+                        return;
+                    }
+
+                    response.text(
+                            "Hello " + username
+                    );
+                }
+        );
+        server.post(
+                "/logout",
+                (request, response) -> {
+                    String sessionId =
+                            request.getCookie(
+                                    "sessionId"
+                            );
+
+                    sessionManager.delete(
+                            sessionId
+                    );
+
+                    response.cookie(
+                            "sessionId",
+                            "",
+                            "/",
+                            0L,
+                            true
+                    );
+
+                    response.text(
+                            "Logged out"
                     );
                 }
         );

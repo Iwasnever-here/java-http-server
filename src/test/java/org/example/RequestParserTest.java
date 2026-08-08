@@ -346,6 +346,22 @@ class RequestParserTest {
                 exception.getMessage()
         );
     }
+    @Test
+    void parsesSingleCookie() {
+        InputStream inputStream = createInputStream(
+                "GET / HTTP/1.1\r\n" +
+                        "Cookie: sessionId=abc123\r\n" +
+                        "\r\n"
+        );
+
+        HttpRequest request =
+                parser.parse(inputStream);
+
+        assertEquals(
+                "abc123",
+                request.getCookie("sessionId")
+        );
+    }
 
 
     private InputStream createInputStream(String rawRequest) {
